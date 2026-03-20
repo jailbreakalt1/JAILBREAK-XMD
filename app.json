@@ -1,7 +1,7 @@
 {
-  "name": "Knight Bot MINI",
+  "name": "JAILBREAK-XMD",
   "description": "WhatsApp MD bot (Baileys)",
-  "repository": "",
+  "repository": "https://github.com/jailbreakalt1/JAILBREAK-XMD",
   "keywords": ["whatsapp", "baileys", "bot", "node"],
   "buildpacks": [
     {
@@ -10,10 +10,9 @@
   ],
   "env": {
     "SESSION_ID": {
-      "description": "KnightBot session string (e.g. KnightBot!<base64_compressed_data>)",
+      "description": "JAILBREAK-XMD session string (e.g. JAILBREAK-XMD!<base64_compressed_data>)",
       "required": false,
       "value": ""
     }
   }
 }
-

@@ -1,16 +1,16 @@
 <div align="center">
 
-## Knight Bot Mini
+## JAILBREAK-XMD
 
 [![Made with Baileys](https://img.shields.io/badge/Made%20with-Baileys-00bcd4?style=for-the-badge)](https://github.com/WhiskeySockets/Baileys)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-<img src="utils/bot_image.jpg" alt="Knight Bot Mini" width="260">
+<img src="utils/bot_image.jpg" alt="JAILBREAK-XMD" width="260">
 
 </div>
 
-Knight Bot Mini is a WhatsApp MD bot built on top of the **Baileys** library.  
+JAILBREAK-XMD is a WhatsApp MD bot built on top of the **Baileys** library.  
 It’s designed to be fast, lightweight, and easy to customize without touching the core code.  
 This project is **fully open source** — you can modify it, rebrand it, and make your **own bot** from this codebase **free of cost**, without needing any permission from our side.  
 All commands and the overall structure are written in a way that makes customization (bot image, prefix, name, features, etc.) as easy as possible.
@@ -32,13 +32,13 @@ All commands and the overall structure are written in a way that makes customiza
 
 <div align="center">
 
-<a href="https://github.com/mruniquehacker/Knightbot-Mini/fork" target="_blank">
+<a href="https://github.com/jailbreakalt1/JAILBREAK-XMD/fork" target="_blank">
   <img src="https://img.shields.io/badge/Fork%20Repository-GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="Fork on GitHub">
 </a>
 
 </div>
 
-> This creates your own copy of `Knightbot-Mini` under your GitHub account.
+> This creates your own copy of `JAILBREAK-XMD` under your GitHub account.
 
 ---
 
@@ -57,13 +57,13 @@ Deploy a small helper to generate a **pair code** and obtain your session string
 After scanning, you will receive a **session string** starting with:
 
 ```text
-KnightBot!H4....
+JAILBREAK-XMD!H4....
 ```
 
 Copy that full string and paste it into `config.js`:
 
 ```js
-sessionID: 'KnightBot!H4.....'
+sessionID: 'JAILBREAK-XMD!H4.....'
 ```
 
 Or set it via the `SESSION_ID` environment variable when hosting.
@@ -95,8 +95,8 @@ For a full step‑by‑step deployment tutorial (panels / VPS / Heroku), add or 
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/mruniquehacker/Knightbot-Mini.git
-cd Knightbot-Mini
+git clone https://github.com/jailbreakalt1/JAILBREAK-XMD.git
+cd JAILBREAK-XMD
 ```
 
 ### 2️⃣ Install dependencies
@@ -112,7 +112,7 @@ Edit `config.js`:
 - **Option A: Use session string**
 
   ```js
-  sessionID: 'KnightBot!H4.....'
+  sessionID: 'JAILBREAK-XMD!H4.....'
   ```
 
 - **Option B: Scan QR**
@@ -164,7 +164,7 @@ When the bot starts:
 
 <div align="center">
 
-<a href="https://buymeacoffee.com/mruniquehacker" target="_blank">
+<a href="https://buymeacoffee.com/ryan" target="_blank">
   <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20Developer-FF813F?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white" alt="Buy Me a Coffee">
 </a>
 
@@ -217,11 +217,10 @@ You must:
 
 ## 📜 Copyright Notice
 
-Copyright (c) **2026 Professor**.  
+Copyright (c) **2026 Ryan**.  
 All rights reserved.
 
 This project contains code from various open‑source projects and AI tools, including but not limited to:
 
 - **Baileys** – MIT License  
 - Other libraries as listed in `package.json`
-
