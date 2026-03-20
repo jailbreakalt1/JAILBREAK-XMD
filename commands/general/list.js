@@ -64,14 +64,14 @@ module.exports = {
             name: 'cta_url',
             buttonParamsJson: JSON.stringify({
               display_text: 'Youtube',
-              url: config.social?.youtube || 'http://youtube.com/@mr_unique_hacker'
+              url: config.social?.youtube || 'http://youtube.com/@Ryan'
             })
           },
           {
             name: 'cta_url',
             buttonParamsJson: JSON.stringify({
               display_text: 'Visit Bot Repo',
-              url: config.social?.github || 'https://github.com/mruniquehacker'
+              url: config.social?.github || 'https://github.com/jailbreakalt1/JAILBREAK-XMD'
             })
           },
           {
@@ -90,4 +90,3 @@ module.exports = {
     }
   }
 };
-

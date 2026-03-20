@@ -63,6 +63,7 @@ const {
 const qrcode = require('qrcode-terminal');
 const config = require('./config');
 const handler = require('./handler');
+const { wrapSendMessageWithUniversalContext } = require('./utils/messageContext');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -191,13 +192,13 @@ async function startBot() {
   const sessionFolder = `./${config.sessionName}`;
   const sessionFile = path.join(sessionFolder, 'creds.json');
 
-  // Check if sessionID is provided and process KnightBot! format session
-  if (config.sessionID && config.sessionID.startsWith('KnightBot!')) {
+  // Check if sessionID is provided and process JAILBREAK-XMD! format session
+  if (config.sessionID && config.sessionID.startsWith('JAILBREAK-XMD!')) {
     try {
       const [header, b64data] = config.sessionID.split('!');
 
-      if (header !== 'KnightBot' || !b64data) {
-        throw new Error("❌ Invalid session format. Expected 'KnightBot!.....'");
+      if (header !== 'JAILBREAK-XMD' || !b64data) {
+        throw new Error("❌ Invalid session format. Expected 'JAILBREAK-XMD!.....'");
       }
 
       const cleanB64 = b64data.replace('...', '');
@@ -211,10 +212,10 @@ async function startBot() {
 
       // Write decompressed session data to creds.json
       fs.writeFileSync(sessionFile, decompressedData, 'utf8');
-      console.log('📡 Session : 🔑 Retrieved from KnightBot Session');
+      console.log('📡 Session : 🔑 Retrieved from JAILBREAK-XMD session');
 
     } catch (e) {
-      console.error('📡 Session : ❌ Error processing KnightBot session:', e.message);
+      console.error('📡 Session : ❌ Error processing JAILBREAK-XMD session:', e.message);
       // Continue with normal QR flow if session processing fails
     }
   }
@@ -238,6 +239,7 @@ async function startBot() {
     markOnlineOnConnect: false,
     getMessage: async () => undefined // Don't load messages from store
   });
+  wrapSendMessageWithUniversalContext(sock);
 
   // Bind store to socket
   store.bind(sock.ev);
