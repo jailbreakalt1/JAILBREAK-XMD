@@ -74,21 +74,10 @@
         },
         "song": {
             "npm": [
-                "gifted-btns",
                 "yt-search",
                 "axios"
-            ],
-            "nodeBuiltIns": [
-                "fs",
-                "path"
-            ],
-            "asset": "utils/bot image.png"
+            ]
         },
-        "songpick": {
-            "npm": [
-                "gifted-btns"
-            ],
-            "asset": "utils/bot image.png"
-        }
+        "songpick": {}
     }
 }
