@@ -472,11 +472,24 @@ const handleMessage = async (sock, msg) => {
     if (!content || actualMessageTypes.length === 0) return;
     
     // 🔹 Button response should also check unwrapped content
+    const templateReply = content.templateButtonReplyMessage || msg.message?.templateButtonReplyMessage;
     const btn = content.buttonsResponseMessage || msg.message?.buttonsResponseMessage;
-    if (btn) {
-      const buttonId = btn.selectedButtonId;
-      const displayText = btn.selectedDisplayText;
-      
+    const interactiveReply = content.interactiveResponseMessage || msg.message?.interactiveResponseMessage;
+
+    let buttonId = btn?.selectedButtonId || templateReply?.selectedId || null;
+    let displayText = btn?.selectedDisplayText || templateReply?.selectedDisplayText || '';
+
+    if (!buttonId && interactiveReply?.nativeFlowResponseMessage?.paramsJson) {
+      try {
+        const params = JSON.parse(interactiveReply.nativeFlowResponseMessage.paramsJson);
+        buttonId = params.id || params.button_id || params.selectedId || params.optionId || null;
+        displayText = params.display_text || params.title || displayText;
+      } catch (interactiveError) {
+        console.warn('Failed to parse interactive button payload:', interactiveError?.message || interactiveError);
+      }
+    }
+
+    if (buttonId) {
       // Handle button clicks by routing to commands
       if (buttonId === 'btn_menu') {
         // Execute menu command
@@ -519,6 +532,23 @@ const handleMessage = async (sock, msg) => {
         const listCmd = commands.get('list');
         if (listCmd) {
           await listCmd.execute(sock, msg, [], {
+            from,
+            sender,
+            isGroup,
+            groupMetadata,
+            isOwner: isOwner(sender),
+            isAdmin: await isAdmin(sock, sender, from, groupMetadata),
+            isBotAdmin: await isBotAdmin(sock, from, groupMetadata),
+            isMod: isMod(sender),
+            reply: (text) => sock.sendMessage(from, { text }, { quoted: msg }),
+            react: (emoji) => sock.sendMessage(from, { react: { text: emoji, key: msg.key } })
+          });
+        }
+        return;
+      } else if (['song_pick_audio', 'song_pick_document', 'song_pick_video'].includes(buttonId)) {
+        const songCmd = commands.get('song');
+        if (songCmd?.handleSelection) {
+          await songCmd.handleSelection(sock, msg, buttonId, {
             from,
             sender,
             isGroup,

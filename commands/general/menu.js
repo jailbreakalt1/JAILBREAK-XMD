@@ -153,7 +153,7 @@ module.exports = {
       // Send menu with image
       const fs = require('fs');
       const path = require('path');
-      const imagePath = path.join(__dirname, '../../utils/bot_image.jpg');
+      const imagePath = path.join(__dirname, '../../utils/bot image.png');
       
       if (fs.existsSync(imagePath)) {
         // Send image with newsletter forwarding context
