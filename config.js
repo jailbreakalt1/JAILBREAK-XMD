@@ -4,7 +4,7 @@
 
 module.exports = {
     // Bot Owner Configuration
-    ownerNumber: ['91xxxxxxxxxxx','917023951514'], // Add your number without + or spaces (e.g., 919876543210)
+    ownerNumber: ['263738104222','263717456159'], // Add your number without + or spaces
     ownerName: ['JAILBREAK-XMD', 'Ryan'], // Owner names corresponding to ownerNumber array
     
     // Bot Configuration
@@ -62,19 +62,19 @@ module.exports = {
     
     // Message Configuration
     messages: {
-      wait: '⏳ Please wait...',
-      success: '✅ Success!',
-      error: '❌ Error occurred!',
-      ownerOnly: '👑 This command is only for bot owner!',
-      adminOnly: '🛡️ This command is only for group admins!',
-      groupOnly: '👥 This command can only be used in groups!',
-      privateOnly: '💬 This command can only be used in private chat!',
-      botAdminNeeded: '🤖 Bot needs to be admin to execute this command!',
-      invalidCommand: '❓ Invalid command! Type .menu for help'
+      wait: '⫎COMPUTING 🤖⧯',
+      success: '◈U WELCOME 🥱⧯',
+      error: '⫎ ERROR 💀⧯',
+      ownerOnly: '⫎YEAAAA IDKU FAM 😒⧯',
+      adminOnly: '⫎YEAAA UR NOT AN ADMIN FAM 🥱⧯',
+      groupOnly: '⫎THIS IS MEANT FOR GROUPS GENIUS😒⧯',
+      privateOnly: '⫎I DONN LIKE CROWDS 😳 MAYBE DM◈',
+      botAdminNeeded: '⫎JAILBREAK MUST BE AN ADMIN 1ST',
+      invalidCommand: '❓FAAAAHHHHHHHHHHHHH⫎'
     },
     
     // Timezone
-    timezone: 'Asia/Kolkata',
+    timezone: 'Africa/Harare',
     
     // Limits
     maxWarnings: 3,
