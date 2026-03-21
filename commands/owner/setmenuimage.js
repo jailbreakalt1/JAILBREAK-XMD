@@ -56,23 +56,17 @@ module.exports = {
         return extra.reply('❌ Failed to download the image. Please try again.');
       }
       
-      // Convert to JPEG if it's a sticker (webp)
+      // Convert incoming media to PNG so the bot consistently uses utils/bot image.png
       let finalBuffer = mediaBuffer;
-      if (quotedMsg.stickerMessage) {
+      if (quotedMsg.stickerMessage || !imageMsg.mimetype?.includes('png')) {
         const sharp = require('sharp');
         finalBuffer = await sharp(mediaBuffer)
-          .jpeg({ quality: 90 })
-          .toBuffer();
-      } else if (!imageMsg.mimetype?.includes('jpeg') && !imageMsg.mimetype?.includes('jpg')) {
-        // Convert other formats to JPEG
-        const sharp = require('sharp');
-        finalBuffer = await sharp(mediaBuffer)
-          .jpeg({ quality: 90 })
+          .png()
           .toBuffer();
       }
       
-      // Save to utils/bot_image.jpg
-      const imagePath = path.join(__dirname, '../../utils/bot_image.jpg');
+      // Save to utils/bot image.png
+      const imagePath = path.join(__dirname, '../../utils/bot image.png');
       
       // Delete old image if exists
       if (fs.existsSync(imagePath)) {
@@ -94,5 +88,3 @@ module.exports = {
     }
   }
 };
-
-
