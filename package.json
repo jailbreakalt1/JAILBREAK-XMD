@@ -1,7 +1,7 @@
 {
     "name": "whatsapp-md-bot",
     "version": "1.0.0",
-    "description": "WhatsApp MD-Style Multi-Command Bot with Baileys",
+    "description": "WhatsApp MD-Style Multi-Command Bot with Baileys, a local bot image asset, and compatibility notes for command dependencies.",
     "main": "index.js",
     "type": "commonjs",
     "scripts": {
@@ -49,5 +49,42 @@
     },
     "devDependencies": {
         "nodemon": "^3.1.0"
+    },
+    "x-commandRequirements": {
+        "ping": {
+            "npm": [
+                "moment-timezone"
+            ],
+            "nodeBuiltIns": [
+                "fs",
+                "os",
+                "path"
+            ],
+            "asset": "utils/bot image.png"
+        },
+        "menu": {
+            "asset": "utils/bot image.png"
+        },
+        "setmenuimage": {
+            "npm": [
+                "@whiskeysockets/baileys",
+                "sharp"
+            ],
+            "asset": "utils/bot image.png"
+        },
+        "song": {
+            "npm": [
+                "yt-search",
+                "axios"
+            ],
+            "nodeBuiltIns": [
+                "fs",
+                "path"
+            ],
+            "asset": "utils/bot image.png"
+        },
+        "songpick": {
+            "asset": "utils/bot image.png"
+        }
     }
 }
