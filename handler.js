@@ -545,23 +545,6 @@ const handleMessage = async (sock, msg) => {
           });
         }
         return;
-      } else if (['song_pick_audio', 'song_pick_document', 'song_pick_video'].includes(buttonId)) {
-        const songCmd = commands.get('song');
-        if (songCmd?.handleSelection) {
-          await songCmd.handleSelection(sock, msg, buttonId, {
-            from,
-            sender,
-            isGroup,
-            groupMetadata,
-            isOwner: isOwner(sender),
-            isAdmin: await isAdmin(sock, sender, from, groupMetadata),
-            isBotAdmin: await isBotAdmin(sock, from, groupMetadata),
-            isMod: isMod(sender),
-            reply: (text) => sock.sendMessage(from, { text }, { quoted: msg }),
-            react: (emoji) => sock.sendMessage(from, { react: { text: emoji, key: msg.key } })
-          });
-        }
-        return;
       }
     }
     
