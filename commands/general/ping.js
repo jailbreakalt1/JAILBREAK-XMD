@@ -9,8 +9,6 @@ const moment = require('moment-timezone');
 const config = require('../../config');
 
 const BOT_IMAGE_PATH = path.join(__dirname, '../../utils/bot image.png');
-const NEWSLETTER_SOURCE_URL = 'https://whatsapp.com/channel/0029VagJIAr3bbVzV70jSU1p';
-
 const formatUptime = (uptimeInSeconds) => {
   const totalSeconds = Math.floor(uptimeInSeconds);
   const days = Math.floor(totalSeconds / 86400);
@@ -26,24 +24,52 @@ const formatUptime = (uptimeInSeconds) => {
   ].filter(Boolean).join(' ');
 };
 
-const buildPingCaption = ({ latency, uptime, now, usedMemoryMb, totalMemoryMb }) => [
-  '╭━〔 *JAILBREAK SYSTEM : PING* 〕━⬣',
-  '┃',
-  `┃ ⚡ *Latency:* ${latency}ms`,
-  `┃ 🕒 *Uptime:* ${uptime}`,
-  '┃ 🟢 *Status:* Online',
-  '┃',
-  `┃ 📅 *Date:* ${now.format('DD MMM YYYY')}`,
-  `┃ ⏰ *Time:* ${now.format('HH:mm:ss')}`,
-  `┃ 🌍 *Zone:* ${now.format('z')} (${config.timezone})`,
-  '┃',
-  `┃ 💾 *RAM:* ${usedMemoryMb}MB / ${totalMemoryMb}MB`,
-  `┃ 🖥️ *Host:* ${os.hostname()}`,
-  `┃ 🧠 *CPU:* x${os.cpus().length} Cores`,
-  '┃',
-  '┃ > System operational.',
-  '╰━━━━━━━━━━━━━━━━━━━━⬣'
-].join('\n');
+const buildPingCaption = ({ latency, uptime, now, usedMemory, totalMemory }) =>
+  `*╔═══════════════════╗*\n` +
+  `*║   ₊˚⊹ ᰔ⋆ JAIL BREAK.ai ₊˚ෆ     ║*\n\n` +
+  `┌───────────────────┐\n` +
+  `  𝚅𝙸𝚃𝙰𝙻 𝚂𝙸𝙶𝙽𝚂\n` +
+  `  ☬ 𝔭𝔦𝔫𝔤   :: \`${latency}ms\`\n` +
+  `  ☬ úṕtíḿé :: \`${uptime}\`\n` +
+  `  ☬ ̠s̠̠t̠a̠̠t̠̠u̠̠s̠ :: \`Online\`\n` +
+  `├───────────────────┤\n` +
+  `  𝚃𝙸𝙼𝙸𝙽𝙶 𝙳𝙰𝚃𝙰\n` +
+  `  ⧯ 𝒹𝒶𝓉𝑒 :: \`${now.format('DD MMM YYYY')}\`\n` +
+  `  ⧯ tเ๓є :: \`${now.format('HH:mm:ss')}\`\n` +
+  `  ⧯ ̷z̷̷o̷̷n̷̷e̷: :: \`KWEKWE (CAT)\`\n` +
+  `├───────────────────┤\n` +
+  `  ʀᴇꜱᴏᴜʀᴄᴇꜱ\n` +
+  `  ⨇ 尺卂爪 :: \`${(usedMemory / 1024 / 1024).toFixed(2)}MB / ${(totalMemory / 1024 / 1024).toFixed(0)}MB\`\n` +
+  `  ⨇ ʰᵒˢᵗ :: \`${os.hostname()}\`\n` +
+  `  ⨇ ͓̽C͓͓̽̽P͓͓̽̽U͓̽ :: \`x${os.cpus().length} Cores\`\n` +
+  `╰────────────────────\n\n` +
+  `> ₛYₛₜₑₘ ₒₚₚₑᵣₐₜᵢₒₙₐₗ\n` +
+  `╚═══════════════════╝`;
+
+const buildContextInfo = () => ({
+  forwardingScore: 1,
+  isForwarded: true,
+  forwardedNewsletterMessageInfo: {
+    newsletterJid: config.newsletterJid || '120363161513685998@newsletter',
+    newsletterName: config.botName || 'JAILBREAK HOME',
+    serverMessageId: -1
+  }
+});
+
+const buildPingPayload = ({ imageBuffer, responseText }) => {
+  if (imageBuffer) {
+    return {
+      image: imageBuffer,
+      caption: responseText,
+      contextInfo: buildContextInfo()
+    };
+  }
+
+  return {
+    text: responseText,
+    contextInfo: buildContextInfo()
+  };
+};
 
 module.exports = {
   name: 'ping',
@@ -56,52 +82,25 @@ module.exports = {
     try {
       const imageBuffer = fs.existsSync(BOT_IMAGE_PATH) ? fs.readFileSync(BOT_IMAGE_PATH) : null;
 
-      const timestampStart = Date.now();
+      const timestampStart = process.hrtime.bigint();
       const now = moment().tz(config.timezone || 'Africa/Harare');
-      const botLatency = Date.now() - timestampStart;
+      const botLatency = Number((process.hrtime.bigint() - timestampStart) / 1000000n);
       const botUptime = formatUptime(process.uptime());
-      const totalMemoryMb = (os.totalmem() / 1024 / 1024).toFixed(0);
-      const usedMemoryMb = ((os.totalmem() - os.freemem()) / 1024 / 1024).toFixed(2);
+      const totalMemory = os.totalmem();
+      const usedMemory = os.totalmem() - os.freemem();
 
       const responseText = buildPingCaption({
         latency: botLatency,
         uptime: botUptime,
         now,
-        usedMemoryMb,
-        totalMemoryMb
+        usedMemory,
+        totalMemory
       });
 
-      const contextInfo = {
-        forwardingScore: 1,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-          newsletterJid: config.newsletterJid || '120363161513685998@newsletter',
-          newsletterName: 'JAILBREAK HOME',
-          serverMessageId: -1
-        },
-        externalAdReply: {
-          title: 'JAILBREAK SYSTEM: PING',
-          body: 'Checking Core Latency...',
-          mediaType: 1,
-          renderLargerThumbnail: true,
-          sourceUrl: NEWSLETTER_SOURCE_URL,
-          ...(imageBuffer ? { thumbnail: imageBuffer } : {})
-        }
-      };
-
-      if (imageBuffer) {
-        await sock.sendMessage(extra.from, {
-          image: imageBuffer,
-          caption: responseText,
-          contextInfo
-        }, { quoted: msg });
-        return;
-      }
-
-      await sock.sendMessage(extra.from, {
-        text: responseText,
-        contextInfo
-      }, { quoted: msg });
+      await sock.sendMessage(extra.from, buildPingPayload({
+        imageBuffer,
+        responseText
+      }), { quoted: msg });
     } catch (error) {
       await extra.reply(`❌ Error: ${error.message}`);
     }
