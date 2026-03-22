@@ -6,7 +6,7 @@ const APIs = require('../../utils/api');
 
 module.exports = {
   name: 'ai',
-  aliases: ['gpt', 'chatgpt', 'ask'],
+  aliases: ['jb'],
   category: 'ai',
   description: 'Chat with AI (ChatGPT-style)',
   usage: '.ai <question>',
