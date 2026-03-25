@@ -100,7 +100,7 @@ module.exports = {
       await sock.sendMessage(extra.from, buildPingPayload({
         imageBuffer,
         responseText
-      }), { quoted: msg });
+      }), { quoted: msg, __skipStyle: true });
     } catch (error) {
       await extra.reply(`❌ Error: ${error.message}`);
     }

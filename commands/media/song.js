@@ -89,7 +89,7 @@ module.exports = {
     if (!query) {
       await sock.sendMessage(from, {
         text: `⧯ Provide a song name or YouTube link.\n\nExample: ${config.prefix}play Focalistic Ke Star`
-      }, { quoted: msg });
+      }, { quoted: msg, __skipStyle: true });
       return;
     }
 
@@ -118,13 +118,13 @@ module.exports = {
             sourceUrl: song.url
           }
         }
-      }, { quoted: msg });
+      }, { quoted: msg, __skipStyle: true });
 
       if (typeof extra.react === 'function') await extra.react('✅');
     } catch (error) {
       await sock.sendMessage(from, {
         text: `❌ Failed to fetch song: ${error.message}`
-      }, { quoted: msg });
+      }, { quoted: msg, __skipStyle: true });
       if (typeof extra.react === 'function') await extra.react('❌');
     }
   },
