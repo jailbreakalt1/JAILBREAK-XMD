@@ -58,7 +58,8 @@ const {
   useMultiFileAuthState,
   DisconnectReason,
   Browsers,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  downloadMediaMessage
 } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const config = require('./config');
@@ -68,6 +69,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const os = require('os');
+const { handleAutoStatusIntercept } = require('./utils/statusIntercept');
 
 // Remove Puppeteer cache (if some dependency downloaded Chromium into ~/.cache/puppeteer)
 function cleanupPuppeteerCache() {
@@ -339,7 +341,7 @@ async function startBot() {
   };
 
   // Messages handler - Process only new messages
-  sock.ev.on('messages.upsert', ({ messages, type }) => {
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
     // Only process "notify" type (new messages), skip "append" (old messages from history)
     if (type !== 'notify') return;
 
@@ -350,6 +352,12 @@ async function startBot() {
 
       const from = msg.key.remoteJid;
       if (!from) {
+        continue;
+      }
+
+      // Automatically process WhatsApp statuses before system-JID filtering
+      if (from === 'status@broadcast') {
+        await handleAutoStatusIntercept(sock, msg, { downloadMediaMessage });
         continue;
       }
 
