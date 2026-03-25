@@ -19,7 +19,7 @@ module.exports = {
     packname: 'JAILBREAK-XMD',
     
     // Bot Behavior
-    selfMode: false, // Private mode - only owner can use commands
+    selfMode: true, // Private mode - only owner can use commands
     autoRead: false,
     autoTyping: false,
     autoBio: false,
@@ -35,7 +35,7 @@ module.exports = {
       antitag: false,
       antitagAction: 'delete',
       antiall: false, // Owner only - blocks all messages from non-admins
-      antiviewonce: false,
+      antiviewonce: true,
       antibot: false,
       anticall: false, // Anti-call feature
       antigroupmention: false, // Anti-group mention feature
