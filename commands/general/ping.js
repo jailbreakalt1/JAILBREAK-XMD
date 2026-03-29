@@ -5,7 +5,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const moment = require('moment-timezone');
+const { nowInConfiguredTimezone, getTimezoneLabel } = require('../../utils/timezone');
 const config = require('../../config');
 
 const BOT_IMAGE_PATH = path.join(__dirname, '../../utils/bot image.png');
@@ -36,7 +36,7 @@ const buildPingCaption = ({ latency, uptime, now, usedMemory, totalMemory }) =>
   `  𝚃𝙸𝙼𝙸𝙽𝙶 𝙳𝙰𝚃𝙰\n` +
   `  ⧯ 𝒹𝒶𝓉𝑒 :: \`${now.format('DD MMM YYYY')}\`\n` +
   `  ⧯ tเ๓є :: \`${now.format('HH:mm:ss')}\`\n` +
-  `  ⧯ ̷z̷̷o̷̷n̷̷e̷: :: \`KWEKWE (CAT)\`\n` +
+  `  ⧯ ̷z̷̷o̷̷n̷̷e̷: :: \`${getTimezoneLabel()}\`\n` +
   `├───────────────────┤\n` +
   `  ʀᴇꜱᴏᴜʀᴄᴇꜱ\n` +
   `  ⨇ 尺卂爪 :: \`${(usedMemory / 1024 / 1024).toFixed(2)}MB / ${(totalMemory / 1024 / 1024).toFixed(0)}MB\`\n` +
@@ -83,7 +83,7 @@ module.exports = {
       const imageBuffer = fs.existsSync(BOT_IMAGE_PATH) ? fs.readFileSync(BOT_IMAGE_PATH) : null;
 
       const timestampStart = process.hrtime.bigint();
-      const now = moment().tz(config.timezone || 'Africa/Harare');
+      const now = nowInConfiguredTimezone();
       const botLatency = Number((process.hrtime.bigint() - timestampStart) / 1000000n);
       const botUptime = formatUptime(process.uptime());
       const totalMemory = os.totalmem();

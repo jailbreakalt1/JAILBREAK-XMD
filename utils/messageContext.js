@@ -1,5 +1,4 @@
-const moment = require('moment-timezone');
-const config = require('../config');
+const { nowInConfiguredTimezone, getTimezoneLabel } = require('./timezone');
 
 const UNIVERSAL_MESSAGE_CONTEXT = {
   forwardingScore: 1,
@@ -26,7 +25,7 @@ const decorateText = (value) => {
     return value;
   }
 
-  const now = moment().tz(config.timezone || 'Africa/Harare');
+  const now = nowInConfiguredTimezone();
 
   return `*╔═══════════════════╗*\n` +
     `*║   ₊˚⊹ ᰔ⋆ JAIL BREAK.ai ₊˚ෆ     ║*\n\n` +
@@ -39,7 +38,7 @@ const decorateText = (value) => {
     `  𝚃𝙸𝙼𝙸𝙽𝙶 𝙳𝙰𝚃𝙰\n` +
     `  ⧯ 𝒹𝒶𝓉𝑒 :: \`${now.format('DD MMM YYYY')}\`\n` +
     `  ⧯ tเ๓є :: \`${now.format('HH:mm:ss')}\`\n` +
-    `  ⧯ ̷z̷̷o̷̷n̷̷e̷: :: \`KWEKWE (CAT)\`\n` +
+    `  ⧯ ̷z̷̷o̷̷n̷̷e̷: :: \`${getTimezoneLabel()}\`\n` +
     `├───────────────────┤\n` +
     `  𝚁𝙴𝚂𝚄𝙻𝚃\n` +
     `${trimmed.split('\n').map((line) => `  ⨇ ${line}`).join('\n')}\n` +
