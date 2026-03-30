@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+
 const config = require('../config');
 
 const STORAGE_LIMIT_HOURS = 6;
@@ -26,6 +29,9 @@ const jbContext = {
   }
 };
 
+const storeByChatAndId = new Map();
+const storeById = new Map();
+
 const messageStore = new Map();
 
 if (!fs.existsSync(TEMP_DIR)) {
@@ -37,12 +43,34 @@ const makeStoreKey = (remoteJid = '', msgId = '') => `${remoteJid}:${msgId}`;
 const isInboxJid = (jid = '') =>
   jid.endsWith('@s.whatsapp.net') || jid.endsWith('@lid') || jid.endsWith('@hosted');
 
+const getMessageContent = (msg) => {
+  if (!msg?.message) return null;
+  let m = msg.message;
+
+  if (m.ephemeralMessage?.message) m = m.ephemeralMessage.message;
+  if (m.viewOnceMessageV2Extension?.message) m = m.viewOnceMessageV2Extension.message;
+  if (m.viewOnceMessageV2?.message) m = m.viewOnceMessageV2.message;
+  if (m.viewOnceMessage?.message) m = m.viewOnceMessage.message;
+  if (m.documentWithCaptionMessage?.message) m = m.documentWithCaptionMessage.message;
+
+  return m;
+};
+
 const getTextContent = (content = {}) => {
   if (content.conversation) return content.conversation;
   if (content.extendedTextMessage?.text) return content.extendedTextMessage.text;
   if (content.imageMessage?.caption) return content.imageMessage.caption;
   if (content.videoMessage?.caption) return content.videoMessage.caption;
   return '';
+};
+
+
+const readStreamToBuffer = async (stream) => {
+  let buffer = Buffer.from([]);
+  for await (const chunk of stream) {
+    buffer = Buffer.concat([buffer, chunk]);
+  }
+  return buffer;
 };
 
 const getMessageContent = (msg) => {
@@ -82,6 +110,59 @@ const saveMediaToTemp = (msgId, mtype, buffer) => {
   return filePath;
 };
 
+
+const persistEntry = (chatJid, msgId, entry) => {
+  const byChatKey = makeStoreKey(chatJid, msgId);
+  storeByChatAndId.set(byChatKey, entry);
+  storeById.set(msgId, entry);
+};
+
+setInterval(() => {
+  const now = Date.now();
+
+  for (const [key, value] of storeByChatAndId.entries()) {
+    if (now - value.timestamp > STORAGE_LIMIT_HOURS * 60 * 60 * 1000) {
+      if (value.mediaPath && fs.existsSync(value.mediaPath)) {
+        fs.unlinkSync(value.mediaPath);
+      }
+
+      storeByChatAndId.delete(key);
+
+      const idMatches = Array.from(storeById.entries())
+        .filter(([, idEntry]) => idEntry === value)
+        .map(([id]) => id);
+
+      idMatches.forEach((id) => storeById.delete(id));
+    }
+  }
+}, CLEANUP_INTERVAL_MS);
+
+async function extractMediaBuffer(msg, messageType, options = {}) {
+  const downloader = options.downloadMediaMessage;
+
+  if (typeof downloader === 'function') {
+    try {
+      const media = await downloader(msg, 'buffer', {}, { logger: console });
+      if (media && media.length) return media;
+    } catch (_) {
+      // Fallback below.
+    }
+  }
+
+  try {
+    const content = getMessageContent(msg);
+    const node = content?.[messageType];
+    if (!node) return null;
+
+    const downloadType = messageType.replace('Message', '');
+    const stream = await downloadContentFromMessage(node, downloadType);
+    return await readStreamToBuffer(stream);
+  } catch (_) {
+    return null;
+  }
+}
+
+async function storeInboxMessage(msg, options = {}) {
 async function storeInboxMessage(sock, msg, options = {}) {
   try {
     if (!msg?.message || msg.key?.fromMe) return;
@@ -91,6 +172,12 @@ async function storeInboxMessage(sock, msg, options = {}) {
 
     const content = getMessageContent(msg);
     if (!content) return;
+
+    const messageType = Object.keys(content)[0];
+    if (!messageType || messageType === 'protocolMessage') return;
+
+    const msgId = msg.key?.id;
+    if (!msgId) return;
 
     const msgId = msg.key?.id;
     if (!msgId) return;
@@ -109,6 +196,13 @@ async function storeInboxMessage(sock, msg, options = {}) {
 
     const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'stickerMessage', 'documentMessage'];
     if (mediaTypes.includes(messageType)) {
+      const mediaBuffer = await extractMediaBuffer(msg, messageType, options);
+      if (mediaBuffer && mediaBuffer.length) {
+        entry.mediaPath = saveMediaToTemp(msgId, messageType, mediaBuffer);
+      }
+    }
+
+    persistEntry(from, msgId, entry);
       const downloader = options.downloadMediaMessage;
       if (typeof downloader === 'function') {
         const mediaBuffer = await downloader(msg, 'buffer', {}, { logger: console });
@@ -124,6 +218,31 @@ async function storeInboxMessage(sock, msg, options = {}) {
   }
 }
 
+
+async function notifyOwner(sock, text, quoted) {
+  if (!OWNER_JID) return;
+
+  try {
+    await sock.sendMessage(
+      OWNER_JID,
+      {
+        text,
+        contextInfo: jbContext
+      },
+      quoted ? { quoted } : {}
+    );
+  } catch (error) {
+    console.error('AntiDelete notify error:', error.message || error);
+  }
+}
+
+async function recoverDeletedInboxMessage(sock, msg) {
+  try {
+    if (!OWNER_JID) return;
+
+    const protocol = msg?.message?.protocolMessage;
+    if (!protocol || protocol.type !== 0) return;
+
 async function recoverDeletedInboxMessage(sock, msg) {
   try {
     if (!OWNER_JID) return;
@@ -131,6 +250,25 @@ async function recoverDeletedInboxMessage(sock, msg) {
 
     const chatJid = msg.key?.remoteJid;
     if (!chatJid || !isInboxJid(chatJid)) return;
+
+    const deletedKey = protocol.key || {};
+    const deletedId = deletedKey.id;
+    const deletedRemoteJid = deletedKey.remoteJid || chatJid;
+
+    if (!deletedId) return;
+
+    let data = storeByChatAndId.get(makeStoreKey(deletedRemoteJid, deletedId));
+    if (!data) {
+      data = storeById.get(deletedId) || null;
+    }
+
+    if (!data) {
+      await notifyOwner(sock, `⚠️ *ANTI-DELETE Fallback:* delete detected in ${chatJid}, but original message was not in cache.`, msg);
+      return;
+    }
+
+    const senderNumber = (data.senderJid || '').split('@')[0] || 'unknown';
+    const header = `╔════════════════════╗\n   ╼ RECOVERY ACTIVE ╾\n╚════════════════════╝\n⎛\n  ⧯ 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 𝙸𝙽𝙱𝙾𝚇\n  ◈ Sender: @${senderNumber}\n  ◈ Chat: ${data.chatJid}\n  ◈ Type: \`${data.type}\`\n⎝\n> ☬ *JAILBREAK ANTI-DELETE* ☬`;
 
     const deletedKey = msg.message.protocolMessage.key || {};
     const deletedId = deletedKey.id;
@@ -150,6 +288,7 @@ async function recoverDeletedInboxMessage(sock, msg) {
 
     if (data.mediaPath && fs.existsSync(data.mediaPath)) {
       const media = fs.readFileSync(data.mediaPath);
+
       if (data.type === 'imageMessage') {
         await sock.sendMessage(OWNER_JID, { image: media, caption: header }, sendOptions);
       } else if (data.type === 'videoMessage') {
@@ -166,17 +305,33 @@ async function recoverDeletedInboxMessage(sock, msg) {
           { document: media, fileName: 'deleted-inbox-file', mimetype: 'application/octet-stream', caption: header },
           sendOptions
         );
+
+      } else {
+        await notifyOwner(sock, `${header}\n\n⚠️ Unsupported stored media type.`, msg);
+      }
+      return;
+    }
+
+    if (data.text) {
+      await sock.sendMessage(OWNER_JID, { text: `${header}\n\n📝 *Content:* \`${data.text}\`` }, sendOptions);
+      return;
+    }
+
+    await notifyOwner(sock, `${header}\n\n⚠️ Delete detected but no text/media payload was available.`, msg);
       }
     } else if (data.text) {
       await sock.sendMessage(OWNER_JID, { text: `${header}\n\n📝 *Content:* \`${data.text}\`` }, sendOptions);
     }
+
   } catch (error) {
     console.error('AntiDelete recover error:', error.message || error);
   }
 }
 
 async function handleAntiDelete(sock, msg, options = {}) {
+  await storeInboxMessage(msg, options);
   await storeInboxMessage(sock, msg, options);
+
   await recoverDeletedInboxMessage(sock, msg);
 }
 
