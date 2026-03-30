@@ -156,13 +156,13 @@ module.exports = {
     }
 
     try {
-      await extra.reply('🔄 Updating the bot, please wait…');
+      await extra.reply('🔄 Updating the bot, wait…');
 
       const { copiedFiles } = await updateViaZip(zipUrl);
 
       const summary = copiedFiles.length
-        ? `✅ Update complete. Files updated: ${copiedFiles.length}`
-        : '✅ Update complete. No files needed updating.';
+        ? `✅Files updated: ${copiedFiles.length}`
+        : '✅No files needed updating.';
 
       await sock.sendMessage(chatId, { text: `${summary}\nRestarting…` }, { quoted: msg });
 

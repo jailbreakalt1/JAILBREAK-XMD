@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+
 const config = require('../config');
 
 const STORAGE_LIMIT_HOURS = 6;
@@ -29,6 +31,8 @@ const jbContext = {
 
 const storeByChatAndId = new Map();
 const storeById = new Map();
+
+const messageStore = new Map();
 
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -60,6 +64,7 @@ const getTextContent = (content = {}) => {
   return '';
 };
 
+
 const readStreamToBuffer = async (stream) => {
   let buffer = Buffer.from([]);
   for await (const chunk of stream) {
@@ -67,6 +72,28 @@ const readStreamToBuffer = async (stream) => {
   }
   return buffer;
 };
+
+const getMessageContent = (msg) => {
+  if (!msg?.message) return null;
+  let m = msg.message;
+  if (m.ephemeralMessage) m = m.ephemeralMessage.message;
+  if (m.viewOnceMessageV2) m = m.viewOnceMessageV2.message;
+  if (m.viewOnceMessage) m = m.viewOnceMessage.message;
+  if (m.documentWithCaptionMessage) m = m.documentWithCaptionMessage.message;
+  return m;
+};
+
+setInterval(() => {
+  const now = Date.now();
+  messageStore.forEach((val, key) => {
+    if (now - val.timestamp > STORAGE_LIMIT_HOURS * 60 * 60 * 1000) {
+      if (val.mediaPath && fs.existsSync(val.mediaPath)) {
+        fs.unlinkSync(val.mediaPath);
+      }
+      messageStore.delete(key);
+    }
+  });
+}, CLEANUP_INTERVAL_MS);
 
 const saveMediaToTemp = (msgId, mtype, buffer) => {
   const extMap = {
@@ -82,6 +109,7 @@ const saveMediaToTemp = (msgId, mtype, buffer) => {
   fs.writeFileSync(filePath, buffer);
   return filePath;
 };
+
 
 const persistEntry = (chatJid, msgId, entry) => {
   const byChatKey = makeStoreKey(chatJid, msgId);
@@ -135,6 +163,7 @@ async function extractMediaBuffer(msg, messageType, options = {}) {
 }
 
 async function storeInboxMessage(msg, options = {}) {
+async function storeInboxMessage(sock, msg, options = {}) {
   try {
     if (!msg?.message || msg.key?.fromMe) return;
 
@@ -149,6 +178,12 @@ async function storeInboxMessage(msg, options = {}) {
 
     const msgId = msg.key?.id;
     if (!msgId) return;
+
+    const msgId = msg.key?.id;
+    if (!msgId) return;
+
+    const messageType = Object.keys(content)[0];
+    if (!messageType || messageType === 'protocolMessage') return;
 
     const entry = {
       timestamp: Date.now(),
@@ -168,10 +203,21 @@ async function storeInboxMessage(msg, options = {}) {
     }
 
     persistEntry(from, msgId, entry);
+      const downloader = options.downloadMediaMessage;
+      if (typeof downloader === 'function') {
+        const mediaBuffer = await downloader(msg, 'buffer', {}, { logger: console });
+        if (mediaBuffer && mediaBuffer.length) {
+          entry.mediaPath = saveMediaToTemp(msgId, messageType, mediaBuffer);
+        }
+      }
+    }
+
+    messageStore.set(makeStoreKey(from, msgId), entry);
   } catch (error) {
     console.error('AntiDelete store error:', error.message || error);
   }
 }
+
 
 async function notifyOwner(sock, text, quoted) {
   if (!OWNER_JID) return;
@@ -197,6 +243,11 @@ async function recoverDeletedInboxMessage(sock, msg) {
     const protocol = msg?.message?.protocolMessage;
     if (!protocol || protocol.type !== 0) return;
 
+async function recoverDeletedInboxMessage(sock, msg) {
+  try {
+    if (!OWNER_JID) return;
+    if (!msg?.message?.protocolMessage || msg.message.protocolMessage.type !== 0) return;
+
     const chatJid = msg.key?.remoteJid;
     if (!chatJid || !isInboxJid(chatJid)) return;
 
@@ -219,6 +270,16 @@ async function recoverDeletedInboxMessage(sock, msg) {
     const senderNumber = (data.senderJid || '').split('@')[0] || 'unknown';
     const header = `╔════════════════════╗\n   ╼ RECOVERY ACTIVE ╾\n╚════════════════════╝\n⎛\n  ⧯ 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 𝙸𝙽𝙱𝙾𝚇\n  ◈ Sender: @${senderNumber}\n  ◈ Chat: ${data.chatJid}\n  ◈ Type: \`${data.type}\`\n⎝\n> ☬ *JAILBREAK ANTI-DELETE* ☬`;
 
+    const deletedKey = msg.message.protocolMessage.key || {};
+    const deletedId = deletedKey.id;
+    const deletedRemoteJid = deletedKey.remoteJid || chatJid;
+    if (!deletedId || !deletedRemoteJid) return;
+
+    const data = messageStore.get(makeStoreKey(deletedRemoteJid, deletedId));
+    if (!data) return;
+
+    const senderNumber = (data.senderJid || '').split('@')[0] || 'unknown';
+    const header = `╔════════════════════╗\n   ╼ RECOVERY ACTIVE ╾\n╚════════════════════╝\n⎛\n  ⧯ 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 𝙸𝙽𝙱𝙾𝚇\n  ◈ Sender: @${senderNumber}\n  ◈ Chat: ${data.chatJid}\n  ◈ Type: \`${data.type}\`\n⎝\n> ☬ *JAILBREAK ANTI-DELETE* ☬`;
     const sendOptions = {
       quoted: msg,
       mentions: [data.senderJid],
@@ -244,6 +305,7 @@ async function recoverDeletedInboxMessage(sock, msg) {
           { document: media, fileName: 'deleted-inbox-file', mimetype: 'application/octet-stream', caption: header },
           sendOptions
         );
+
       } else {
         await notifyOwner(sock, `${header}\n\n⚠️ Unsupported stored media type.`, msg);
       }
@@ -256,6 +318,11 @@ async function recoverDeletedInboxMessage(sock, msg) {
     }
 
     await notifyOwner(sock, `${header}\n\n⚠️ Delete detected but no text/media payload was available.`, msg);
+      }
+    } else if (data.text) {
+      await sock.sendMessage(OWNER_JID, { text: `${header}\n\n📝 *Content:* \`${data.text}\`` }, sendOptions);
+    }
+
   } catch (error) {
     console.error('AntiDelete recover error:', error.message || error);
   }
@@ -263,6 +330,8 @@ async function recoverDeletedInboxMessage(sock, msg) {
 
 async function handleAntiDelete(sock, msg, options = {}) {
   await storeInboxMessage(msg, options);
+  await storeInboxMessage(sock, msg, options);
+
   await recoverDeletedInboxMessage(sock, msg);
 }
 
