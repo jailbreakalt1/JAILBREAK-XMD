@@ -70,6 +70,7 @@ const path = require('path');
 const zlib = require('zlib');
 const os = require('os');
 const { handleAutoStatusIntercept } = require('./utils/statusIntercept');
+const { handleAntiDelete } = require('./utils/antiDelete');
 
 // Remove Puppeteer cache (if some dependency downloaded Chromium into ~/.cache/puppeteer)
 function cleanupPuppeteerCache() {
@@ -365,6 +366,9 @@ async function startBot() {
       if (isSystemJid(from)) {
         continue; // Silently ignore system messages
       }
+
+      // Always run inbox anti-delete tracking/recovery before dedupe/age gates
+      await handleAntiDelete(sock, msg, { downloadMediaMessage });
 
       // Deduplication: Skip if message has already been processed
       const msgId = msg.key.id;
