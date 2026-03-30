@@ -992,6 +992,7 @@ const handleGroupUpdate = async (sock, update) => {
           // Get current time string
           const now = new Date();
           const timeString = now.toLocaleTimeString('en-US', { 
+            timeZone: config.timezone || 'Africa/Harare',
             hour: '2-digit', 
             minute: '2-digit',
             hour12: true 
@@ -1118,6 +1119,7 @@ const handleGroupUpdate = async (sock, update) => {
           // Get current time string
           const now = new Date();
           const timeString = now.toLocaleTimeString('en-US', { 
+            timeZone: config.timezone || 'Africa/Harare',
             hour: '2-digit', 
             minute: '2-digit',
             hour12: true 

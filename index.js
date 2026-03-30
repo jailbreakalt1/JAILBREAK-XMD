@@ -63,6 +63,7 @@ const {
 } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const config = require('./config');
+if (config.timezone && !process.env.TZ) process.env.TZ = config.timezone;
 const handler = require('./handler');
 const { wrapSendMessageWithUniversalContext } = require('./utils/messageContext');
 const fs = require('fs');
@@ -70,6 +71,7 @@ const path = require('path');
 const zlib = require('zlib');
 const os = require('os');
 const { handleAutoStatusIntercept } = require('./utils/statusIntercept');
+const { handleAntiDelete } = require('./utils/antiDelete');
 
 // Remove Puppeteer cache (if some dependency downloaded Chromium into ~/.cache/puppeteer)
 function cleanupPuppeteerCache() {
@@ -366,6 +368,9 @@ async function startBot() {
         continue; // Silently ignore system messages
       }
 
+      // Always run inbox anti-delete tracking/recovery before dedupe/age gates
+      await handleAntiDelete(sock, msg, { downloadMediaMessage });
+
       // Deduplication: Skip if message has already been processed
       const msgId = msg.key.id;
       if (processedMessages.has(msgId)) continue;
@@ -441,9 +446,20 @@ async function startBot() {
     // Silently handle receipt updates
   });
 
-  // Message updates (silently handled, no logging)
-  sock.ev.on('messages.update', () => {
-    // Silently handle message updates
+  // Message updates - includes some delete protocol updates on certain clients
+  sock.ev.on('messages.update', async (updates = []) => {
+    for (const update of updates) {
+      try {
+        if (!update?.key || !update?.update?.message) continue;
+        const reconstructed = {
+          key: update.key,
+          message: update.update.message
+        };
+        await handleAntiDelete(sock, reconstructed, { downloadMediaMessage });
+      } catch (_) {
+        // Silently handle
+      }
+    }
   });
 
   // Group participant updates (join/leave)
